@@ -17,6 +17,7 @@ static void Delay();
 static void Small_Delay();
 static void FW_Provide();
 static void Delta_FW_Provide();
+static void monitor();
 int main(void)
 {
 
@@ -144,12 +145,7 @@ static void FW_Provide()
                         UARTCharPut(HOST_UART, 'f');
                 }
             }
-            while(1)
-            {
-                uint16_t len = 0;
-                len = UART_gets(BOARD_UART, transaction_buf);
-                UART_puts(HOST_UART, transaction_buf, len);
-            }
+            monitor();
 
         }
         else
@@ -158,14 +154,53 @@ static void FW_Provide()
 }
 static void Delta_FW_Provide()
 {
-    uint32_t sz_info = 0;
-    uint16_t current_chunk_sz = 0;
+    uint16_t offset = 0;
+    uint8_t start_page = 0;
+    uint16_t delta_sz = 0;
     uint16_t rec_sz = 0;
     unsigned char c = 0;
     UARTCharPut(HOST_UART, 'v');
     while(1)
     {
-
+        c = UARTCharGet(HOST_UART);
+        if(c == 's')
+        {
+            rec_sz = UART_gets(HOST_UART, transaction_buf);
+            start_page = atoi(transaction_buf);
+            UARTCharPut(BOARD_UART, 'l');
+            UART_puts(BOARD_UART, transaction_buf, rec_sz);
+            rec_sz = UART_gets(HOST_UART, transaction_buf);
+            offset = atoi(transaction_buf);
+            UARTCharPut(BOARD_UART, 'm');
+            UART_puts(BOARD_UART, transaction_buf, rec_sz);
+            rec_sz = UART_gets(HOST_UART, transaction_buf);
+            delta_sz = atoi(transaction_buf);
+            UARTCharPut(BOARD_UART, 'n');
+            UART_puts(BOARD_UART, transaction_buf, rec_sz);
+            c = UARTCharGet(BOARD_UART);
+            if(c == 'f')
+            {
+                while(delta_sz)
+                {
+                    UARTCharPut(HOST_UART, 'g');
+                    UART_get_chunk(HOST_UART, transaction_buf, delta_sz);
+                    c = UARTCharGet(BOARD_UART);
+                    if(c == 'r')
+                        UART_put_chunk(BOARD_UART, transaction_buf, delta_sz);
+                    delta_sz = 0;
+                }
+                monitor();
+            }
+        }
+    }
+}
+static void monitor()
+{
+    while(1)
+    {
+        uint16_t len = 0;
+        len = UART_gets(BOARD_UART, transaction_buf);
+        UART_puts(HOST_UART, transaction_buf, len);
     }
 }
 static void UART_get_chunk(uint32_t Base, uint8_t * buf, uint16_t len)
