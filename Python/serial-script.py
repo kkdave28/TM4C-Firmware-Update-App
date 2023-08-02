@@ -10,7 +10,6 @@ def run(port, baudrate, timeout=1000, wtimeout=1000):
     while True:
         char_read = bridge.read().decode("utf-8")
         if(char_read == 'u'):
-            print("hee hee")
             bridge.write(bytes('s', "utf-8"))
             sz_info = str(current_app_sz) + "\n"
             bridge.write(bytes(sz_info, "utf-8"))
@@ -20,6 +19,8 @@ def run(port, baudrate, timeout=1000, wtimeout=1000):
             if(len(buf) == 0):
                 fw_file.close()
             bridge.write(buf)
+        elif (char_read == 'v'):
+            
         
 
 
